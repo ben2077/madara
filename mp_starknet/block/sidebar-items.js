@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"mod":["serialize"],"struct":["Block","Header"]};
+window.SIDEBAR_ITEMS = {"struct":["Block","Header"],"type":["BlockTransactionReceipts","BlockTransactions","MaxTransactions"]};

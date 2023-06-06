@@ -54,19 +54,93 @@
 <a href="#54" id="54">54</a>
 <a href="#55" id="55">55</a>
 <a href="#56" id="56">56</a>
+<a href="#57" id="57">57</a>
+<a href="#58" id="58">58</a>
+<a href="#59" id="59">59</a>
+<a href="#60" id="60">60</a>
+<a href="#61" id="61">61</a>
+<a href="#62" id="62">62</a>
+<a href="#63" id="63">63</a>
+<a href="#64" id="64">64</a>
+<a href="#65" id="65">65</a>
+<a href="#66" id="66">66</a>
+<a href="#67" id="67">67</a>
+<a href="#68" id="68">68</a>
+<a href="#69" id="69">69</a>
+<a href="#70" id="70">70</a>
+<a href="#71" id="71">71</a>
+<a href="#72" id="72">72</a>
+<a href="#73" id="73">73</a>
+<a href="#74" id="74">74</a>
+<a href="#75" id="75">75</a>
+<a href="#76" id="76">76</a>
+<a href="#77" id="77">77</a>
+<a href="#78" id="78">78</a>
+<a href="#79" id="79">79</a>
+<a href="#80" id="80">80</a>
+<a href="#81" id="81">81</a>
+<a href="#82" id="82">82</a>
+<a href="#83" id="83">83</a>
+<a href="#84" id="84">84</a>
+<a href="#85" id="85">85</a>
+<a href="#86" id="86">86</a>
+<a href="#87" id="87">87</a>
+<a href="#88" id="88">88</a>
+<a href="#89" id="89">89</a>
+<a href="#90" id="90">90</a>
+<a href="#91" id="91">91</a>
+<a href="#92" id="92">92</a>
+<a href="#93" id="93">93</a>
+<a href="#94" id="94">94</a>
+<a href="#95" id="95">95</a>
+<a href="#96" id="96">96</a>
+<a href="#97" id="97">97</a>
+<a href="#98" id="98">98</a>
+<a href="#99" id="99">99</a>
+<a href="#100" id="100">100</a>
+<a href="#101" id="101">101</a>
+<a href="#102" id="102">102</a>
+<a href="#103" id="103">103</a>
+<a href="#104" id="104">104</a>
+<a href="#105" id="105">105</a>
+<a href="#106" id="106">106</a>
+<a href="#107" id="107">107</a>
+<a href="#108" id="108">108</a>
+<a href="#109" id="109">109</a>
+<a href="#110" id="110">110</a>
+<a href="#111" id="111">111</a>
+<a href="#112" id="112">112</a>
+<a href="#113" id="113">113</a>
+<a href="#114" id="114">114</a>
+<a href="#115" id="115">115</a>
+<a href="#116" id="116">116</a>
+<a href="#117" id="117">117</a>
+<a href="#118" id="118">118</a>
+<a href="#119" id="119">119</a>
+<a href="#120" id="120">120</a>
+<a href="#121" id="121">121</a>
+<a href="#122" id="122">122</a>
 </pre><pre class="rust"><code><span class="kw">use </span>std::marker::PhantomData;
 <span class="kw">use </span>std::sync::Arc;
 
-<span class="kw">use </span>mp_starknet::block::Block <span class="kw">as </span>StarknetBlock;
-<span class="kw">use </span>mp_starknet::storage::{PALLET_STARKNET, STARKNET_CURRENT_BLOCK};
+<span class="kw">use </span>frame_system::EventRecord;
+<span class="kw">use </span>madara_runtime::{Hash, RuntimeEvent};
+<span class="kw">use </span>mp_starknet::execution::types::{ClassHashWrapper, ContractAddressWrapper, ContractClassWrapper};
+<span class="kw">use </span>mp_starknet::storage::{
+    PALLET_STARKNET, PALLET_SYSTEM, STARKNET_CONTRACT_CLASS, STARKNET_CONTRACT_CLASS_HASH, STARKNET_NONCE,
+    SYSTEM_EVENTS,
+};
+<span class="kw">use </span>mp_starknet::transaction::types::EventWrapper;
+<span class="kw">use </span>pallet_starknet::types::NonceWrapper;
+<span class="kw">use </span>pallet_starknet::Event;
 <span class="comment">// Substrate
 </span><span class="kw">use </span>sc_client_api::backend::{Backend, StorageProvider};
-<span class="kw">use </span>scale_codec::Decode;
+<span class="kw">use </span>scale_codec::{Decode, Encode};
 <span class="kw">use </span>sp_blockchain::HeaderBackend;
 <span class="kw">use </span>sp_runtime::traits::Block <span class="kw">as </span>BlockT;
 <span class="kw">use </span>sp_storage::StorageKey;
 
-<span class="kw">use super</span>::{storage_prefix_build, StorageOverride};
+<span class="kw">use super</span>::{storage_key_build, storage_prefix_build, StorageOverride};
 
 <span class="doccomment">/// An override for runtimes that use Schema V1
 </span><span class="kw">pub struct </span>SchemaV1Override&lt;B: BlockT, C, BE&gt; {
@@ -94,6 +168,9 @@
         }
         <span class="prelude-val">None
     </span>}
+    <span class="kw">fn </span>encode_storage_key&lt;T: Encode&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, key: <span class="kw-2">&amp;</span>T) -&gt; Vec&lt;u8&gt; {
+        Encode::encode(key)
+    }
 }
 
 <span class="kw">impl</span>&lt;B, C, BE&gt; StorageOverride&lt;B&gt; <span class="kw">for </span>SchemaV1Override&lt;B, C, BE&gt;
@@ -102,12 +179,67 @@
     C: HeaderBackend&lt;B&gt; + StorageProvider&lt;B, BE&gt; + <span class="lifetime">&#39;static</span>,
     BE: Backend&lt;B&gt; + <span class="lifetime">&#39;static</span>,
 {
-    <span class="kw">fn </span>current_block(<span class="kw-2">&amp;</span><span class="self">self</span>, block_hash: B::Hash) -&gt; <span class="prelude-ty">Option</span>&lt;StarknetBlock&gt; {
-        <span class="self">self</span>.query_storage::&lt;StarknetBlock&gt;(
+    <span class="kw">fn </span>contract_class_by_address(
+        <span class="kw-2">&amp;</span><span class="self">self</span>,
+        block_hash: &lt;B <span class="kw">as </span>BlockT&gt;::Hash,
+        address: ContractAddressWrapper,
+    ) -&gt; <span class="prelude-ty">Option</span>&lt;ContractClassWrapper&gt; {
+        <span class="kw">let </span>class_hash = <span class="self">self</span>.contract_class_hash_by_address(block_hash, address)<span class="question-mark">?</span>;
+        <span class="self">self</span>.contract_class_by_class_hash(block_hash, class_hash)
+    }
+
+    <span class="kw">fn </span>contract_class_hash_by_address(
+        <span class="kw-2">&amp;</span><span class="self">self</span>,
+        block_hash: &lt;B <span class="kw">as </span>BlockT&gt;::Hash,
+        address: ContractAddressWrapper,
+    ) -&gt; <span class="prelude-ty">Option</span>&lt;ClassHashWrapper&gt; {
+        <span class="kw">let </span>storage_contract_class_hash_prefix = storage_prefix_build(PALLET_STARKNET, STARKNET_CONTRACT_CLASS_HASH);
+        <span class="self">self</span>.query_storage::&lt;ClassHashWrapper&gt;(
             block_hash,
-            <span class="kw-2">&amp;</span>StorageKey(storage_prefix_build(PALLET_STARKNET, STARKNET_CURRENT_BLOCK)),
+            <span class="kw-2">&amp;</span>StorageKey(storage_key_build(storage_contract_class_hash_prefix, <span class="kw-2">&amp;</span><span class="self">self</span>.encode_storage_key(<span class="kw-2">&amp;</span>address))),
         )
-        .map(Into::into)
+    }
+
+    <span class="kw">fn </span>contract_class_by_class_hash(
+        <span class="kw-2">&amp;</span><span class="self">self</span>,
+        block_hash: &lt;B <span class="kw">as </span>BlockT&gt;::Hash,
+        contract_class_hash: ClassHashWrapper,
+    ) -&gt; <span class="prelude-ty">Option</span>&lt;ContractClassWrapper&gt; {
+        <span class="kw">let </span>storage_contract_class_prefix = storage_prefix_build(PALLET_STARKNET, STARKNET_CONTRACT_CLASS);
+        <span class="self">self</span>.query_storage::&lt;ContractClassWrapper&gt;(
+            block_hash,
+            <span class="kw-2">&amp;</span>StorageKey(storage_key_build(
+                storage_contract_class_prefix,
+                <span class="kw-2">&amp;</span><span class="self">self</span>.encode_storage_key(<span class="kw-2">&amp;</span>contract_class_hash),
+            )),
+        )
+    }
+
+    <span class="kw">fn </span>nonce(<span class="kw-2">&amp;</span><span class="self">self</span>, block_hash: &lt;B <span class="kw">as </span>BlockT&gt;::Hash, address: ContractAddressWrapper) -&gt; <span class="prelude-ty">Option</span>&lt;NonceWrapper&gt; {
+        <span class="kw">let </span>storage_nonce_prefix = storage_prefix_build(PALLET_STARKNET, STARKNET_NONCE);
+        <span class="kw">let </span>nonce = <span class="self">self</span>.query_storage::&lt;NonceWrapper&gt;(
+            block_hash,
+            <span class="kw-2">&amp;</span>StorageKey(storage_key_build(storage_nonce_prefix, <span class="kw-2">&amp;</span><span class="self">self</span>.encode_storage_key(<span class="kw-2">&amp;</span>address))),
+        );
+
+        <span class="kw">match </span>nonce {
+            <span class="prelude-val">Some</span>(nonce) =&gt; <span class="prelude-val">Some</span>(nonce),
+            <span class="prelude-val">None </span>=&gt; <span class="prelude-val">Some</span>(NonceWrapper::default()),
+        }
+    }
+
+    <span class="kw">fn </span>events(<span class="kw-2">&amp;</span><span class="self">self</span>, block_hash: &lt;B <span class="kw">as </span>BlockT&gt;::Hash) -&gt; <span class="prelude-ty">Option</span>&lt;Vec&lt;EventWrapper&gt;&gt; {
+        <span class="kw">let </span>events_key = storage_prefix_build(PALLET_SYSTEM, SYSTEM_EVENTS);
+        <span class="kw">let </span>events = <span class="self">self</span>.query_storage::&lt;Vec&lt;EventRecord&lt;RuntimeEvent, Hash&gt;&gt;&gt;(block_hash, <span class="kw-2">&amp;</span>StorageKey(events_key));
+        events.map(|events| {
+            events
+                .into_iter()
+                .filter_map(|e| <span class="kw">match </span>e {
+                    EventRecord { event: RuntimeEvent::Starknet(Event::StarknetEvent(event)), .. } =&gt; <span class="prelude-val">Some</span>(event),
+                    <span class="kw">_ </span>=&gt; <span class="prelude-val">None</span>,
+                })
+                .collect()
+        })
     }
 }
 </code></pre></div>

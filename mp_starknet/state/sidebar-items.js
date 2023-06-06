@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"struct":["ContractStateNode","DictStateReader"]};
+window.SIDEBAR_ITEMS = {"struct":["DictStateReader"],"trait":["StateChanges"]};
